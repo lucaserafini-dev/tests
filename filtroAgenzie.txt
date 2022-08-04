@@ -1,0 +1,230 @@
+var added = [];
+
+function createNewFilter(){
+	var href = document.getElementsByClassName("nd-switch__item nd-switch__control in-formNavigationSwitch")[1].href;
+	var numPag = document.getElementsByClassName("in-pagination__item in-pagination__item--current")[0].innerText;
+	document.getElementsByClassName("nd-button nd-button--outlineLight in-multiStringButton")[0].click();
+		
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.open("GET", href.replace("immobiliare.it/search-map","immobiliare.it/api-next/search-list/real-estates/") + "&pag=" + numPag + "&paramsCount=7&path=%2Fsearch-list%2F");
+	xmlhttp.setRequestHeader("Content-Type", "application/json");
+	xmlhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			var newEntries = JSON.parse(this.responseText).results;
+			var filterList = document.getElementsByClassName("nd-list nd-list--borderBottom in-formModal__filters")[0];
+			var filterElement = document.createElement("li");
+			filterElement.className = 'nd-list__item in-formModal__item';
+			
+			var label = document.createElement('span');
+			label.innerHTML = ' <span class="in-formModal__label"> <svg viewBox="0 0 16 16" class="nd-icon in-formModal__icon"> <use class="nd-icon__use" xlink:href="#stairs"></use> </svg> Agenzie </span>'
+			label = label.getElementsByTagName("span")[0];
+			filterElement.appendChild(label);
+				
+			var choicer = document.createElement('span');
+			choicer.id = "choiceAgency";
+			choicer.className = 'nd-switch nd-switch--compact in-formModal__filter--row in-formModal__filter--switch';
+			var agencyList = [];
+			
+			for(var i = 0; i < newEntries.length ; i++){
+				if(newEntries[i].realEstate.advertiser == null){
+					continue;
+				}
+				if(newEntries[i].realEstate.advertiser.agency == null){
+					continue;
+				}
+				if(newEntries[i].realEstate.advertiser.agency.displayName == null){
+					continue;
+				}
+				if(newEntries[i].realEstate.advertiser.agency.imageUrls == null){
+					continue;
+				}
+				if(newEntries[i].realEstate.advertiser.agency.imageUrls.small == null){
+					continue;
+				}
+				if(agencyList.filter(e => e.displayName == newEntries[i].realEstate.advertiser.agency.displayName).length < 1){
+					agencyList.push({"displayName" : newEntries[i].realEstate.advertiser.agency.displayName, "img": newEntries[i].realEstate.advertiser.agency.imageUrls.small});
+				}
+			}
+			
+			for(var i = 0; i<agencyList.length; i++){
+				var labelToSpan = document.createElement("label");
+				labelToSpan.innerHTML = ' <label class="nd-checkbox nd-switch__item in-formModal__filter--switchItem"> <input onclick="removeUnwantedAgencies(\'' + newEntries[i].realEstate.advertiser.agency.imageUrls.small+'\')" name="check" readonly="" class="nd-checkbox__nativeControl" type="checkbox" aria-checked="false"> <div class="nd-checkbox__control nd-switch__control"><span>' + agencyList[i].displayName + '</span></div> </label>';
+				labelToSpan = labelToSpan.getElementsByTagName("label")[0];
+				
+				choicer.appendChild(labelToSpan);
+			}
+			filterElement.appendChild(choicer);
+					
+			filterList.appendChild(filterElement);
+		}
+	}
+		
+	xmlhttp.send();	
+}
+
+function removeUnwantedAgencies(imgUrl) {
+	var images = document.getElementsByClassName("nd-figure__content nd-ratio__img");
+	var j = 0;
+	for(var i=images.length;i>=0; i--){
+		if(images[j] != null && images[j].src == imgUrl.trim()){
+			images[j].parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.remove();
+		}else{
+			j++;
+		}
+	}
+	
+	fillPageAsync(imgUrl, 0);
+}
+
+function fillPageAsync(imgUrl, numPag){
+	var actualEntries = document.getElementsByClassName("nd-list__item in-realEstateResults__item").length;
+
+	if(actualEntries < 25){
+		var href = document.getElementsByClassName("nd-switch__item nd-switch__control in-formNavigationSwitch")[1].href;
+		if(numPag==0)
+			numPag = document.getElementsByClassName("in-pagination__item in-pagination__item--current")[0].innerText;
+	    else
+			numPag++;
+		
+		var xmlhttp = new XMLHttpRequest();
+		xmlhttp.open("GET", href.replace("immobiliare.it/search-map","immobiliare.it/api-next/search-list/real-estates/") + "&pag=" + eval(numPag++) + "&paramsCount=7&path=%2Fsearch-list%2F");
+		xmlhttp.setRequestHeader("Content-Type", "application/json");
+		
+		xmlhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				var newEntries = JSON.parse(this.responseText).results;
+				
+				for(var i=0; i < newEntries.length && actualEntries < 25; i++){	
+					var entryList = document.getElementsByClassName("nd-list in-realEstateResults")[0];
+					var entryElement = document.createElement("li");
+					entryElement.className = 'nd-list__item in-realEstateResults__item';
+					entryElement.id = 'link_ad_' + newEntries[i].realEstate.id;
+					
+					var parentDiv = document.createElement("div");
+					parentDiv.className = "in-card nd-mediaObject nd-mediaObject--colToRow in-realEstateCard in-realEstateCard--interactive in-realEstateListCard";
+					entryElement.appendChild(parentDiv);
+					
+					
+					var carouselDiv = document.createElement("div")
+					carouselDiv.className = "in-realEstateListCard__mediaContent";
+					parentDiv.appendChild(carouselDiv);
+					
+					var innerCarouselDiv = document.createElement("div")
+					innerCarouselDiv.className = "nd-figure in-photo in-realEstateListCard__photo--big";
+					carouselDiv.appendChild(innerCarouselDiv);
+					
+					var inner2CarouselDiv = document.createElement("div")
+					inner2CarouselDiv.className = "nd-figure__image nd-ratio";
+					innerCarouselDiv.appendChild(inner2CarouselDiv);
+					
+					var inner3CarouselDiv = document.createElement("div")
+					inner3CarouselDiv.className = "nd-slideshow nd-slideshow--small";
+					inner2CarouselDiv.appendChild(inner3CarouselDiv);
+					
+					var inner4CarouselDiv = document.createElement("div")
+					inner4CarouselDiv.className = "nd-slideshow__content";
+					inner3CarouselDiv.appendChild(inner4CarouselDiv);
+					
+					var photos = newEntries[i].realEstate.properties[0].multimedia.photos;
+					for(var j=0; j<photos.length; j++){
+						var photoSlide = document.createElement("div")
+						photoSlide.className = "nd-slideshow__item";
+						
+						var photoSlideImg = document.createElement("img")
+						photoSlideImg.src = photos[j].urls.small;
+						photoSlideImg.width = 360;
+						photoSlideImg.height = 270;
+						
+						photoSlide.appendChild(photoSlideImg);
+						inner4CarouselDiv.appendChild(photoSlide);
+					}
+					
+					var buttonPrevious = document.createElement("button");
+					buttonPrevious.className = "nd-slideshow__arrow nd-slideshow__arrow--prev is-hidden"
+					buttonPrevious.innerHTML = '<svg viewBox="0 0 16 16" class="nd-icon nd-slideshow__icon"><use class="nd-icon__use" xlink:href="#arrow-shadow-left"></use></svg>'
+					inner4CarouselDiv.appendChild(buttonPrevious);
+					
+					var buttonNext = document.createElement("button");
+					buttonNext.className = "nd-slideshow__arrow nd-slideshow__arrow--next"
+					buttonNext.innerHTML = '<svg viewBox="0 0 16 16" class="nd-icon nd-slideshow__icon"><use class="nd-icon__use" xlink:href="#arrow-shadow-right"></use></svg>'
+					inner4CarouselDiv.appendChild(buttonNext);
+					
+					
+					
+					var overlayDiv = document.createElement("div");
+					overlayDiv.className = "nd-mediaObject__content in-card__content in-realEstateListCard__content";
+					parentDiv.appendChild(overlayDiv);
+					
+					var anch = document.createElement("a");
+					anch.className = "in-card__title";
+					anch.href = newEntries[i].seo.url;
+					anch.title = newEntries[i].seo.anchor;
+					anch.innerText = newEntries[i].seo.title;
+					overlayDiv.appendChild(anch);
+					
+					var appProperties = document.createElement("ul");
+					appProperties.className = "nd-list nd-list--pipe in-feat in-feat--full in-feat__mainProperty in-realEstateListCard__features";
+					overlayDiv.appendChild(appProperties);
+					
+					var appPropertiesElement1 = document.createElement("li");
+					appPropertiesElement1.className = "nd-list__item in-feat__item in-feat__item--main in-realEstateListCard__features--main";
+					appPropertiesElement1.innerText = newEntries[i].realEstate.properties[0].price.formattedValue;
+					appProperties.appendChild(appPropertiesElement1);
+					
+					var appPropertiesElement2 = document.createElement("li");
+					appPropertiesElement2.innerHTML = '<li class="nd-list__item in-feat__item" aria-label="locali"><div class="in-feat__data"><svg viewBox="0 0 16 16" class="nd-icon"><use class="nd-icon__use" xlink:href="#planimetry"></use></svg>' + newEntries[i].realEstate.properties[0].rooms + '</div></li>'
+					appPropertiesElement2 = appPropertiesElement2.getElementsByTagName("li")[0];
+					appProperties.appendChild(appPropertiesElement2);
+					
+					var appPropertiesElement3 = document.createElement("li");
+					appPropertiesElement3.innerHTML = '<li class="nd-list__item in-feat__item" aria-label="superficie"><div class="in-feat__data"><svg viewBox="0 0 16 16" class="nd-icon"><use class="nd-icon__use" xlink:href="#size"></use></svg>' + newEntries[i].realEstate.properties[0].surface + '</div></li>'
+					appPropertiesElement3 = appPropertiesElement3.getElementsByTagName("li")[0];
+					appProperties.appendChild(appPropertiesElement3);
+					
+					var appPropertiesElement4 = document.createElement("li");
+					appPropertiesElement4.innerHTML = '<li class="nd-list__item in-feat__item" aria-label="bagno"><div class="in-feat__data"><svg viewBox="0 0 16 16" class="nd-icon"><use class="nd-icon__use" xlink:href="#bathroom"></use></svg>' + newEntries[i].realEstate.properties[0].bathrooms + '</div></li>'
+					appPropertiesElement4 = appPropertiesElement4.getElementsByTagName("li")[0];
+					appProperties.appendChild(appPropertiesElement4);
+					
+					var appPropertiesElement5 = document.createElement("li");
+					appPropertiesElement5.innerHTML = '<li class="nd-list__item in-feat__item" aria-label="piano"><div class="in-feat__data"><svg viewBox="0 0 16 16" class="nd-icon"><use class="nd-icon__use" xlink:href="#stairs"></use></svg>' + newEntries[i].realEstate.properties[0].floor.abbreviation + '</div></li>'
+					appPropertiesElement5 = appPropertiesElement5.getElementsByTagName("li")[0];
+					appProperties.appendChild(appPropertiesElement5);
+					
+					var description = document.createElement("div");
+					description.className = "in-card__description in-realEstateListCard__descriptionWrapper in-realEstateListCard__descriptionWrapper--small";
+					overlayDiv.appendChild(description);
+					
+					var subTitle = document.createElement("div");
+					subTitle.className = "in-realEstateListCard__caption";
+					subTitle.innerText = newEntries[i].realEstate.properties[0].caption;
+					description.appendChild(subTitle);
+					
+					var subdescription = document.createElement("p");
+					subTitle.className = "in-realEstateListCard__descriptionShort";
+					subTitle.innerText = newEntries[i].realEstate.properties[0].description;
+					description.appendChild(subdescription);
+					
+					var lastDiv = document.createElement("div");
+					lastDiv.innerHTML = '<div class="nd-mediaObject__contentBottom in-card__contentBottom"> <div class="nd-figure in-realEstateListCard__referent"> <div class="nd-figure__image nd-ratio in-realEstateListCard__referent--image"><img class="nd-figure__content nd-ratio__img" loading="lazy" src="' + newEntries[i].realEstate.advertiser.agency.imageUrls.small + '" alt="' + newEntries[i].realEstate.advertiser.agency.displayName + '" width="135" height="35"></div> </div> <div class="in-cardActions in-realEstateListCard__actions"> <button class="nd-button nd-button--link nd-button--onlyIcon in-cardActions__item" aria-label="Salva tra i preferiti"> <svg viewBox="0 0 16 16" class="nd-icon nd-button__icon"> <use class="nd-icon__use" xlink:href="#heart--outline"></use> <use class="nd-icon__use nd-icon__use--alternate" xlink:href="#heart"></use> </svg> </button> <button class="nd-button nd-button--link nd-button--onlyIcon in-cardActions__item" aria-label="nascondi annuncio"> <svg viewBox="0 0 16 16" class="nd-icon nd-button__icon"> <use class="nd-icon__use" xlink:href="#bin"></use> <use class="nd-icon__use nd-icon__use--alternate" xlink:href="#update"></use> </svg> </button> <button class="nd-button nd-button--link in-cardActions__button in-cardActions__button--visit" type="button"> <svg viewBox="0 0 16 16" class="nd-icon nd-button__icon"> <use class="nd-icon__use" xlink:href="#date"></use> </svg> <span class="nd-button__iconText">Visita</span> </button> <button class="nd-button nd-button--link in-cardActions__button"> <svg viewBox="0 0 16 16" class="nd-icon nd-button__icon"> <use class="nd-icon__use" xlink:href="#chat"></use> </svg> <span class="nd-button__iconText">messaggio</span> </button> </div> </div>'
+					lastDiv = lastDiv.getElementsByTagName("div")[0];
+					overlayDiv.appendChild(lastDiv);
+					if(imgUrl !=  newEntries[i].realEstate.advertiser.agency.imageUrls.small && !added.includes(newEntries[i].realEstate.id)){
+						added = [added, newEntries[i].realEstate.id];
+						entryList.appendChild(entryElement);
+						actualEntries++;
+					}
+				}
+				
+				var renewEntries = document.getElementsByClassName("nd-list__item in-realEstateResults__item").length;
+				if(renewEntries < 25){
+					setTimeout(fillPageAsync, 500, imgUrl, numPag);
+				}
+			}
+		};
+		
+		xmlhttp.send();
+	}
+}
+
+createNewFilter();
